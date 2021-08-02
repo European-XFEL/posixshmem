@@ -1,12 +1,17 @@
 
+from libc.errno cimport errno
+from libc.string cimport strerror
 from posix.fcntl cimport O_RDONLY, O_RDWR, O_CREAT
 from posix.mman cimport PROT_READ, PROT_WRITE, MAP_SHARED, MAP_PRIVATE, \
     shm_open, shm_unlink, mode_t
 from posix.stat cimport struct_stat, fstat
 from posix.unistd cimport ftruncate
-from libc.errno cimport errno
 
 from mmap import mmap
+
+
+cdef object ErrnoError():
+    return OSError(errno, strerror(errno).decode('ascii'))
 
 
 cdef class SharedMemory:
@@ -37,11 +42,11 @@ cdef class SharedMemory:
 
         self._fd = shm_open(self._name, shm_flags, mode)
         if self._fd == -1:
-            raise OSError(errno)
+            raise ErrnoError()
 
         if rw:
             if ftruncate(self._fd, size) == -1:
-                raise OSError(errno)
+                raise ErrnoError()
 
             self._mmap_flags = (PROT_WRITE | PROT_READ) if mmap_flags < 0 \
                 else mmap_flags
@@ -53,7 +58,7 @@ cdef class SharedMemory:
     cdef size_t _get_size(self):
         cdef struct_stat stat
         if fstat(self._fd, &stat) == -1:
-            raise OSError(errno)
+            raise ErrnoError()
 
         return stat.st_size
 
@@ -80,7 +85,7 @@ cdef class SharedMemory:
 
         if self._name is not None and self._rw:
             if shm_unlink(self._name) == -1:
-                raise OSError(errno)
+                raise ErrnoError()
 
         self._name = None
 

@@ -20,7 +20,10 @@ cdef class SharedMemory:
     cdef int _mmap_flags
 
     def __cinit__(self, object name, size_t size=0, bint rw=True,
-                  mode_t mode=0o777, mode_t shm_flags=0, mode_t mmap_flags=0):
+                  mode_t mode=0o777, int shm_flags=-1, int mmap_flags=-1):
+        if not isinstance(name, str):
+            name = str(name)
+
         self._name = name.encode('ascii')
         self._rw = rw
         self._buf = None
@@ -29,7 +32,7 @@ cdef class SharedMemory:
         if size == 0 and rw:
             raise ValueError('size must be specified if not read only')
 
-        if shm_flags == 0:
+        if shm_flags < 0:
             shm_flags = (O_CREAT | O_RDWR) if rw else O_RDONLY
 
         self._fd = shm_open(self._name, shm_flags, mode)
@@ -40,9 +43,10 @@ cdef class SharedMemory:
             if ftruncate(self._fd, size) == -1:
                 raise OSError(errno)
 
-            self._mmap_flags = mmap_flags or (PROT_WRITE | PROT_READ)
+            self._mmap_flags = (PROT_WRITE | PROT_READ) if mmap_flags < 0 \
+                else mmap_flags
         else:
-            self._mmap_flags = mmap_flags or PROT_READ
+            self._mmap_flags = PROT_READ if mmap_flags < 0 else mmap_flags
 
         self._size = self._get_size()
 

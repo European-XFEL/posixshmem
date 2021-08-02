@@ -19,6 +19,7 @@ setup(
     python_requires='>=3.6',
     ext_modules=cythonize([
         Extension('posixshmem', ['src/posixshmem.pyx'],
-                  extra_compile_args=['-g0', '-O2', '-fpic']),
+                  extra_compile_args=['-g0', '-O2', '-fpic'],
+                  extra_link_args=['-lrt']),
     ], language_level=3, build_dir='build'),
 )

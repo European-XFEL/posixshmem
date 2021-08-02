@@ -11,7 +11,7 @@ from Cython.Build import cythonize  # noqa: E402
 
 setup(
     name='posixshmem',
-    version='0.1.0',
+    version='0.1.1',
     description='Small python library to access POSIX shared memory.',
     author='Philipp Schmidt',
     author_email='philipp.schmidt@xfel.eu',

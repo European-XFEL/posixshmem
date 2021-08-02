@@ -35,7 +35,7 @@ cdef class SharedMemory:
         self._fd = shm_open(self._name, shm_flags, mode)
         if self._fd == -1:
             raise OSError(errno)
-        
+
         if rw:
             if ftruncate(self._fd, size) == -1:
                 raise OSError(errno)
@@ -77,7 +77,7 @@ cdef class SharedMemory:
         if self._name is not None and self._rw:
             if shm_unlink(self._name) == -1:
                 raise OSError(errno)
-        
+
         self._name = None
 
     @property
@@ -101,11 +101,18 @@ cdef class SharedMemory:
         return self._name.decode('ascii')
 
     def ndarray(self, dtype, shape=None, offset=0):
-        import numpy
+        import numpy as np
 
-        cdef int count = self._size / dtype.itemsize
-        a = numpy.frombuffer(self._get_view(), dtype=dtype, count=count,
-                             offset=offset)
+        if not isinstance(dtype, np.dtype):
+            dtype = np.dtype(dtype)
+
+        if shape is not None:
+            count = int(np.array(shape).prod())
+        else:
+            count = int((self._size - offset) / dtype.itemsize)
+
+        a = np.frombuffer(self._get_view(), dtype=dtype,
+                          count=count, offset=offset)
 
         if shape is not None:
             a = a.reshape(*shape)

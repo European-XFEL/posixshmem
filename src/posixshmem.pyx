@@ -5,7 +5,7 @@ from posix.fcntl cimport O_RDONLY, O_RDWR, O_CREAT
 from posix.mman cimport PROT_READ, PROT_WRITE, MAP_SHARED, MAP_PRIVATE, \
     shm_open, shm_unlink, mode_t
 from posix.stat cimport struct_stat, fstat
-from posix.unistd cimport ftruncate
+from posix.unistd cimport close, ftruncate
 
 from mmap import mmap
 
@@ -77,11 +77,15 @@ cdef class SharedMemory:
 
     def __dealloc__(self):
         if self._view is not None:
+            self._view.release()
             self._view = None
 
         if self._buf is not None:
             self._buf.close()
             self._buf = None
+
+        if close(self._fd) == -1:
+            raise ErrnoError()
 
         if self._name is not None and self._rw:
             if shm_unlink(self._name) == -1:

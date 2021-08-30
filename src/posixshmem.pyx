@@ -8,6 +8,7 @@ from posix.stat cimport struct_stat, fstat
 from posix.unistd cimport ftruncate
 
 from mmap import mmap
+import os
 
 
 cdef object ErrnoError():
@@ -77,11 +78,14 @@ cdef class SharedMemory:
 
     def __dealloc__(self):
         if self._view is not None:
+            self._view.release()
             self._view = None
 
         if self._buf is not None:
             self._buf.close()
             self._buf = None
+
+        os.close(self._fd)
 
         if self._name is not None and self._rw:
             if shm_unlink(self._name) == -1:
